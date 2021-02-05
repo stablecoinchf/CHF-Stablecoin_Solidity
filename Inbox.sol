@@ -1,10 +1,10 @@
 
 // SPDX-License-Identifier: RYT
 
-pragma solidity ^0.6.7;
+pragma solidity ^0.6.0;
 
-import "https://github.com/smartcontractkit/chainlink/blob/master/evm-contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/SafeMath.sol";
+import "./AggregatorV3Interface.sol";
+import "./SafeMath.sol";
 
 contract Inbox {
     
