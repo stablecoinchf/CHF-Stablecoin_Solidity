@@ -15,6 +15,8 @@ contract testSuite {
     /// More special functions are: 'beforeEach', 'beforeAll', 'afterEach' & 'afterAll'
     function beforeAll() public {
         coin = new StableCoin("CHF StableCoin","CHFC",0);
+        coin.setScPrice(9400000000);
+        Assert.equal(coin.scPrice(),9400000000,"Incorrect price");
         currentAccount = coin.getMsgSender();
         coin.addMinter(currentAccount);
         Assert.equal(coin.mint(currentAccount,500), true, "Mint not succesful");
@@ -23,8 +25,7 @@ contract testSuite {
     }
 
     function testBuyBond1() public {
-        coin.setScPrice(9400000000);
-        Assert.equal(coin.scPrice(),9400000000,"Incorrect price");
+        
         /* Assert.equal(coin.getBondAmount(currentAccount),0,"Incorrect amount");
         Assert.equal(coin.bc().amount(),857,"Incorrect number of bonds");
         Assert.equal(coin.balanceOf(currentAccount),500,"Incorrect number of coins");
