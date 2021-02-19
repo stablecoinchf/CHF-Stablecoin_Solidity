@@ -68,7 +68,7 @@ contract StableCoin is ERC20, Ownable {
     
     constructor (string memory name_, string memory symbol_, uint env_) public  ERC20(name_, symbol_) {
         env = env_;
-        scPrice = 100000000;
+        scPrice = targetPrice;
         bc = new BondCampaign(0,0);
         dc = new DistributionCampaign(0,0);
         updateParams_();
