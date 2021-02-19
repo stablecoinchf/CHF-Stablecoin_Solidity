@@ -18,12 +18,14 @@ contract DistributionCampaign  {
     mapping (address => bool) private _participant;
     
     constructor (uint price_ , uint totalsupply_ ) public {
-         if (price_>targetPrice) {
+         if (price_>targetPrice && price_> 0 && totalsupply_> 0) {
             amount = price_.sub(targetPrice).mul(totalsupply_).div(one8).div(100);
+            price = price_;
         } else {
             amount = 0;
+            price = 0;
         }
-        price = price_;
+        
     }
     
     function isParticipant(address address_) public view returns (bool) {
