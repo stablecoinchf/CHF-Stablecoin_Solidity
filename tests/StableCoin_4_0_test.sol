@@ -9,30 +9,26 @@ contract testSuite {
     
     // StableCoin coin;
     StableCoin coin;
-    address currentAccount;
+    
    
     /// 'beforeAll' runs before all other tests
     /// More special functions are: 'beforeEach', 'beforeAll', 'afterEach' & 'afterAll'
     function beforeAll() public {
         coin = new StableCoin("CHF StableCoin","CHFC",0);
+        coin.addMinter(coin.getMsgSender());
+    }
+    
+    function testCreateBondCampaigm() public {
+        Assert.equal(coin.bc().price(),0,"Incorrect price");
+        Assert.equal(coin.bc().amount(),0,"Incorrect number of bonds");
         coin.setScPrice(9400000000);
         Assert.equal(coin.scPrice(),9400000000,"Incorrect price");
-        currentAccount = coin.getMsgSender();
-        coin.addMinter(currentAccount);
-        Assert.equal(coin.mint(currentAccount,500), true, "Mint not succesful");
-        Assert.equal(coin.mint(TestsAccounts.getAccount(1),9500), true, "Mint not succesful"); 
-        
+        Assert.equal(coin.bc().price(),0,"Incorrect price");
+        Assert.equal(coin.bc().amount(),0,"Incorrect number of bonds");
+        Assert.equal(coin.mint(coin.getMsgSender(),500), true, "Mint not succesful");
+        Assert.equal(coin.mint(TestsAccounts.getAccount(1),8500), true, "Mint not succesful"); 
+        Assert.equal(coin.bc().price(),9400000000,"Incorrect price");
+        Assert.equal(coin.bc().amount(),771,"Incorrect number of bonds");
     }
-
-    function testBuyBond0() public {
-        Assert.equal(coin.bc().amount(),857,"Incorrect number of bonds");
-        try coin.buyBond(858) {
-            Assert.equal(true,false,"It should fail because therem is not enough bonds to sell");
-        } catch {
-            Assert.equal(true,true,"Failed as expected, not enough bonds to sell");
-        }
-    }
-
-    
     
 }
