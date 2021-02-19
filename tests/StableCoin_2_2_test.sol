@@ -1,0 +1,48 @@
+pragma solidity ^0.6.0;
+import "remix_tests.sol"; // this import is automatically injected by Remix.
+import "remix_accounts.sol";
+import "../github/rybarek/CHF-Stablecoin/StableCoin.sol";
+
+
+// File name has to end with '_test.sol', this file can contain more than one testSuite contracts
+contract testSuite {
+    
+    // StableCoin coin;
+    StableCoin coin;
+    address currentAccount;
+    address accountSpender; 
+    address accountRecipient;
+    
+    /// 'beforeAll' runs before all other tests
+    /// More special functions are: 'beforeEach', 'beforeAll', 'afterEach' & 'afterAll'
+    function beforeAll() public {
+        
+        coin = new StableCoin("CHF StableCoin","CHFC",0);
+        
+        // Unfortuntelly for the test purpose CurrentAccount and Spender mus be equal
+        currentAccount = coin.getMsgSender();
+        accountSpender = coin.getMsgSender();
+        accountRecipient = TestsAccounts.getAccount(1);
+    }
+
+    
+    function testTransferFrom2() public {
+        
+        coin.addMinter(currentAccount);
+        Assert.equal(coin.mint(accountSpender,100), true, "Mint not succesful");
+        Assert.equal(coin.increaseAllowance(accountSpender,10),true,"increaseAllowance not sucesfull");
+        Assert.equal(coin.allowance(currentAccount,accountSpender), 10, "Is not 10");
+        Assert.equal(coin.transferFrom(accountSpender,accountRecipient, 10),true,"transferFrom not sucesfull");
+        
+        Assert.equal(coin.balanceOf(currentAccount), 90, "Incorrect balance");
+        Assert.equal(coin.balanceOf(accountRecipient), 10, "Incorrect balance");
+        Assert.equal(coin.allowance(currentAccount,accountSpender), 0, "Is not 0");
+        try coin.transferFrom(accountSpender,accountRecipient, 1) {
+            Assert.equal(true,false, "TransferFrom should not be sucesfull");
+        } catch {
+            Assert.equal(true,true, "Error OK");
+        }
+    } 
+    
+
+}
