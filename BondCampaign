@@ -18,12 +18,13 @@ contract BondCampaign  {
     
     
     constructor (uint  price_, uint totalsupply_) public {
-        if (targetPrice>price_) {
+        if (targetPrice>price_ && price_> 0 && totalsupply_> 0) {
             amount = targetPrice.sub(price_).mul(totalsupply_).div(one8).div(priceDiscount);
+            price = price_;
         } else {
+            price = 0;
             amount = 0;
         }
-        price = price_;
     }
     
      function decreaseAmount(uint amount_) public {
