@@ -1,0 +1,33 @@
+pragma solidity ^0.6.0;
+
+import "./SafeMath.sol";
+
+contract BondCampaign  {
+    
+    using SafeMath for uint256;
+    
+    uint one8 = uint256(100000000);
+    
+    uint targetPrice  = uint(100).mul(one8);
+    
+    uint public priceDiscount = 70;
+    
+    uint public amount;
+
+    uint public price;
+    
+    
+    constructor (uint  price_, uint totalsupply_) public {
+        if (targetPrice>price_) {
+            amount = targetPrice.sub(price_).mul(totalsupply_).div(one8).div(priceDiscount);
+        } else {
+            amount = 0;
+        }
+        price = price_;
+    }
+    
+     function decreaseAmount(uint amount_) public {
+        amount = amount.sub(amount_);
+    }
+    
+}
