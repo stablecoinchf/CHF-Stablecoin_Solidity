@@ -28,9 +28,11 @@ contract StableCoin is ERC20, Ownable {
     
     // Internal and private attributes
     uint256 internal one8 = uint256(100000000);
+    uint256 internal one10 = uint256(10000000000);
     uint256 internal targetPrice = uint256(100).mul(one8);
     uint256 internal minPrice = uint256(98).mul(one8);
     uint256 internal maxPrice = uint256(102).mul(one8);
+    uint256 internal icoPrice = uint256(120).mul(one8);
     
     
     DistributionCampaign public dc;
@@ -143,9 +145,30 @@ contract StableCoin is ERC20, Ownable {
     
     function buyShare(uint amount) external payable  returns (bool)   {
         require(amount>0);
-        uint transactionprice = amount.mul(getPrice_CHF_ETH());
+        // uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(one10).mul(icoPrice).div(one8).div(10);
+        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(icoPrice);
         require(msg.value >= transactionprice);
         _addShareHolder(getMsgSender(),amount);
+        return true;
+    }
+    
+     function buyCoin(uint amount) external payable  returns (bool)   {
+        require(amount>0);
+        // uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(one10).mul(maxPrice).div(one8).div(100);
+        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(maxPrice);
+        require(msg.value >= transactionprice);
+        _mint(getMsgSender(),amount);
+        return true;
+    }
+    
+    function sellCoin(uint amount) external returns (bool)   {
+        require(amount>0);
+        // uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(one10).mul(minPrice).div(one8).div(100);
+        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(minPrice);
+        require(address(this).balance >= transactionprice);
+        address payable seller = msg.sender;
+        seller.transfer(transactionprice);
+        _burn(seller,amount);
         return true;
     }
     
