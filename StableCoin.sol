@@ -1,6 +1,6 @@
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.2;
 
-import "./DistributionCampaign.sol";
+// import "./DistributionCampaign.sol";
 import "./BondCampaign.sol";
 import "./Prices.sol";
 
@@ -30,12 +30,12 @@ contract StableCoin is ERC20, Ownable {
     uint256 internal one8 = uint256(100000000);
     uint256 internal one10 = uint256(10000000000);
     uint256 internal targetPrice = uint256(100).mul(one8);
-    uint256 internal minPrice = uint256(98).mul(one8);
-    uint256 internal maxPrice = uint256(102).mul(one8);
-    uint256 internal icoPrice = uint256(120).mul(one8);
+    uint256 public minPrice = uint256(98).mul(one8);
+    uint256 public maxPrice = uint256(102).mul(one8);
+    uint256 public icoPrice = uint256(120).mul(one8);
     
     
-    DistributionCampaign public dc;
+//    DistributionCampaign public dc;
     
     BondCampaign public bc;
     
@@ -72,7 +72,7 @@ contract StableCoin is ERC20, Ownable {
         env = env_;
         scPrice = targetPrice;
         bc = new BondCampaign(0,0);
-        dc = new DistributionCampaign(0,0);
+        // dc = new DistributionCampaign(0,0);
         updateParams_();
     }
     
@@ -90,14 +90,15 @@ contract StableCoin is ERC20, Ownable {
          
          if (scPrice < minPrice) {
             if  (bc.amount() < 100) {
-                bc = new BondCampaign(scPrice,totalSupply());
+                bc.update(scPrice,totalSupply());
             }
          } else {
              if (bc.amount()>0) {
-               bc = new BondCampaign(0,0);
+               bc.update(0,0);
              }  
          } 
-         if (scPrice > maxPrice)  {
+         
+         /* if (scPrice > maxPrice)  {
             if  (scPrice != dc.price()) {
                dc = new DistributionCampaign(scPrice,totalSupply());
             }
@@ -105,7 +106,7 @@ contract StableCoin is ERC20, Ownable {
               if (dc.amount()>0) {
                 dc = new DistributionCampaign(0,0);
               }  
-         } 
+         } */
     }
     
     function getPrice_CHF_ETH() public view returns (uint)   {
@@ -145,7 +146,6 @@ contract StableCoin is ERC20, Ownable {
     
     function buyShare(uint amount) external payable  returns (bool)   {
         require(amount>0);
-        // uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(one10).mul(icoPrice).div(one8).div(10);
         uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(icoPrice);
         require(msg.value >= transactionprice);
         _addShareHolder(getMsgSender(),amount);
@@ -153,23 +153,34 @@ contract StableCoin is ERC20, Ownable {
     }
     
      function buyCoin(uint amount) external payable  returns (bool)   {
-        require(amount>0);
-        // uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(one10).mul(maxPrice).div(one8).div(100);
+        require(amount>0, "Amount not > 0");
         uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(maxPrice);
-        require(msg.value >= transactionprice);
+        require(msg.value >= transactionprice, "Incorrect transactionsprice");
         _mint(getMsgSender(),amount);
         return true;
     }
     
     function sellCoin(uint amount) external returns (bool)   {
+        require(getBuyPrice()>0);
         require(amount>0);
-        // uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(one10).mul(minPrice).div(one8).div(100);
-        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(minPrice);
-        require(address(this).balance >= transactionprice);
         address payable seller = msg.sender;
+        require(balanceOf(seller)>=amount);
+        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(getBuyPrice());
+        require(address(this).balance >= transactionprice);
         seller.transfer(transactionprice);
-        _burn(seller,amount);
+        _burn(seller,amount); 
         return true;
+    }
+    
+    function getBuyPrice() public view returns (uint){
+        uint buyPrice = 0;
+        if (scPrice< minPrice) {
+            buyPrice = scPrice.mul(102).div(100);
+        }
+        if (buyPrice > minPrice) {
+            buyPrice = minPrice;
+        }
+        return buyPrice;
     }
     
     function getShareAmount(address shareHolder) public view returns (uint) {
@@ -185,7 +196,7 @@ contract StableCoin is ERC20, Ownable {
         return _shares[shareHolder].amount > 0;
     }
     
-    function distributeCoins() public  returns (bool)  {
+/*    function distributeCoins() public  returns (bool)  {
         updateParams_();
         require(dc.amount()>0);
         require(isShareHolder(getMsgSender()));
@@ -194,8 +205,11 @@ contract StableCoin is ERC20, Ownable {
         dc.setParticipant(getMsgSender());
         updateParams_();
         return true;
-    }
+    } */
     
+    function isBondHolder(address bondHolder) public view returns (bool) {
+        return _bonds[bondHolder].amount > 0;
+    }    
     
      function buyBond(uint amount) public  returns (bool)  {
         updateParams_();
