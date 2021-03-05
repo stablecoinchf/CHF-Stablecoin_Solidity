@@ -64,5 +64,35 @@ library Prices {
             return uint(price); 
         }
     }
+    
+    function getAutoPrice() public view returns (uint256) {
+        return getAutoPrice(now);
+    }
+    
+    function getAutoPrice(uint timestamp) public view returns (uint256) {
+        uint one8 = uint(100000000);
+        uint one7 = uint(10000000);
+        uint price = uint(97).mul(one8);
+        if (isEvenHour(timestamp)) {
+            price = (uint(97).mul(one8)).add(getMinute(timestamp).mul(one7));
+        } else {
+            price = (uint(103).mul(one8)).sub(getMinute(timestamp).mul(one7));
+        }
+        return price;
+    }
+    
+    function getMinute(uint timestamp) private view returns (uint) {
+        return uint((timestamp / 60) % 60);
+    }
+    
+    function getHour(uint timestamp) private view returns (uint) {
+        return uint((timestamp / 60 / 60) % 24);
+    }
+    
+    function isEvenHour(uint timestamp) private view returns (bool) {
+        return (getHour(timestamp) % 2 == 0);
+    }
+    
+    
 
 }
