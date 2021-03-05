@@ -25,6 +25,7 @@ contract StableCoin is ERC20, Ownable {
     
     // Price in percentage of the basis value
     uint public scPrice;
+    bool public autoScPrice;
     
     // Internal and private attributes
     uint256 internal one8 = uint256(100000000);
@@ -33,6 +34,7 @@ contract StableCoin is ERC20, Ownable {
     uint256 public minPrice = uint256(98).mul(one8);
     uint256 public maxPrice = uint256(102).mul(one8);
     uint256 public icoPrice = uint256(120).mul(one8);
+    uint256 public icoCoinsPerShare = uint256(10);
     
     
 //    DistributionCampaign public dc;
@@ -71,6 +73,7 @@ contract StableCoin is ERC20, Ownable {
     constructor (string memory name_, string memory symbol_, uint env_) public  ERC20(name_, symbol_) {
         env = env_;
         scPrice = targetPrice;
+        autoScPrice = false;
         bc = new BondCampaign(0,0);
         // dc = new DistributionCampaign(0,0);
         updateParams_();
@@ -81,12 +84,21 @@ contract StableCoin is ERC20, Ownable {
     }
     
     
-    function  setScPrice(uint  newPrice) external onlyOwner {
-        scPrice =  newPrice;
+    function  setScPriceAuto(bool _autoScPrice) external onlyOwner {
+        autoScPrice =  _autoScPrice;
+        updateParams_();
+    }
+    
+    function  setScPrice(uint  _scPrice) external onlyOwner {
+        scPrice =  _scPrice;
         updateParams_();
     }
     
     function updateParams_() internal {
+        
+         if (autoScPrice)  {
+             scPrice =  getAutoPrice(now);
+         }
          
          if (scPrice < minPrice) {
             if  (bc.amount() < 100) {
@@ -116,6 +128,10 @@ contract StableCoin is ERC20, Ownable {
     function getPrice_ETH_CHF() public view returns (uint)   {
         return Prices.getPrice_ETH_CHF(env);
     }
+    
+    function getAutoPrice(uint timestamp) public view returns (uint)   {
+        return Prices.getAutoPrice(timestamp);
+    }
      
     function addShareHolder(address account, uint amount) external onlyOwner returns (bool)   {
         _addShareHolder(account,amount);
@@ -127,12 +143,12 @@ contract StableCoin is ERC20, Ownable {
         uint newAmount = getShareAmount(account).add(amount);
         uint newPrice = (getSharePrice(account).mul(getShareAmount(account))).div(getShareAmount(account).add(amount));
         _shares[account] = share(newAmount,newPrice);
-        _mint(account,amount.mul(10));
+        _mint(account,amount.mul(icoCoinsPerShare));
         totalNoOfShares = totalNoOfShares.add(amount);
         updateParams_();
     }
     
-    function reduceShares(address account, uint amount) external onlyOwner returns (bool)   {
+    /* function reduceShares(address account, uint amount) external onlyOwner returns (bool)   {
         require(amount>0);
         uint newAmount = 0;
         if (getShareAmount(account) > amount)  {
@@ -142,11 +158,11 @@ contract StableCoin is ERC20, Ownable {
         _shares[account] = share(newAmount,newPrice);
         totalNoOfShares = totalNoOfShares.sub(amount);
         return true;
-    }
+    } */
     
     function buyShare(uint amount) external payable  returns (bool)   {
         require(amount>0);
-        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(icoPrice);
+        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(icoPrice).mul(icoCoinsPerShare);
         require(msg.value >= transactionprice);
         _addShareHolder(getMsgSender(),amount);
         return true;
@@ -163,12 +179,11 @@ contract StableCoin is ERC20, Ownable {
     function sellCoin(uint amount) external returns (bool)   {
         require(getBuyPrice()>0);
         require(amount>0);
-        address payable seller = msg.sender;
-        require(balanceOf(seller)>=amount);
+        require(balanceOf(getMsgSender())>=amount);
         uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(getBuyPrice());
         require(address(this).balance >= transactionprice);
-        seller.transfer(transactionprice);
-        _burn(seller,amount); 
+        getMsgSender().transfer(transactionprice);
+        _burn(getMsgSender(),amount); 
         return true;
     }
     
@@ -305,7 +320,7 @@ contract StableCoin is ERC20, Ownable {
         return _burners.has(account);
     }
     
-    function getMsgSender() public view returns (address) {
+    function getMsgSender() public view returns (address payable) {
         return _msgSender();
     }
     
