@@ -30,6 +30,7 @@ contract StableCoin is ERC20, Ownable {
     // Internal and private attributes
     uint256 internal one8 = uint256(100000000);
     uint256 internal one10 = uint256(10000000000);
+    uint256 internal one18 = uint256(1000000000000000000);
     uint256 internal targetPrice = uint256(100).mul(one8);
     uint256 public minPrice = uint256(98).mul(one8);
     uint256 public maxPrice = uint256(102).mul(one8);
@@ -102,7 +103,7 @@ contract StableCoin is ERC20, Ownable {
          }
          
          if (scPrice < minPrice) {
-            if  (bc.amount() < 100) {
+            if  (bc.amount() < 100*one18) {
                 bc.update(scPrice,totalSupply());
             }
          } else {
@@ -164,7 +165,7 @@ contract StableCoin is ERC20, Ownable {
     function buyShare(uint amount) external payable  returns (bool)   {
         updateParams_();
         require(amount>0);
-        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(icoPrice).mul(icoCoinsPerShare);
+        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(icoPrice).mul(icoCoinsPerShare).div(one18);
         require(msg.value >= transactionprice);
         _addShareHolder(getMsgSender(),amount);
          updateParams_();
@@ -174,7 +175,7 @@ contract StableCoin is ERC20, Ownable {
      function buyCoin(uint amount) external payable  returns (bool)   {
         updateParams_();
         require(amount>0, "Amount not > 0");
-        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(maxPrice);
+        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(maxPrice).div(one18);
         require(msg.value >= transactionprice, "Incorrect transactionsprice");
         _mint(getMsgSender(),amount);
          updateParams_();
@@ -186,7 +187,7 @@ contract StableCoin is ERC20, Ownable {
         require(getBuyPrice()>0);
         require(amount>0);
         require(balanceOf(getMsgSender())>=amount);
-        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(getBuyPrice());
+        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(getBuyPrice()).div(one18);
         require(address(this).balance >= transactionprice);
         getMsgSender().transfer(transactionprice);
         _burn(getMsgSender(),amount); 
@@ -257,7 +258,7 @@ contract StableCoin is ERC20, Ownable {
     }    
     
     
-    function executeBond() external payable  returns (bool)    {
+    function convertBond() external payable  returns (bool)    {
         updateParams_();
         uint fee =  getBondConversionFee(getMsgSender());
         require(msg.value >= fee);
@@ -281,7 +282,7 @@ contract StableCoin is ERC20, Ownable {
     
     function getBondConversionFee(address bondHolder) public view returns (uint) {
         uint gain = targetPrice.sub(getBondPrice(bondHolder));
-        return getBondAmount(bondHolder).mul(getPrice_CHF_ETH()).mul(gain).mul(bonConversionFee).div(100);
+        return getBondAmount(bondHolder).mul(getPrice_CHF_ETH()).mul(gain).mul(bonConversionFee).div(100).div(one18);
     }
     
     
