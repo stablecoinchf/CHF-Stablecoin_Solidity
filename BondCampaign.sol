@@ -91,6 +91,7 @@ contract BondCampaign  {
          if ((price_ > minPrice) || totalsupply_==0 ) {
             price = 0;
             amount = 0;
+            startTime=0;
          } 
          
          if (restTime()==0 && targetPrice>price_ && price_> 0 && totalsupply_> 0) {

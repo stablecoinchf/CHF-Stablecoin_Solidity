@@ -44,6 +44,7 @@ contract StableCoin is ERC20, Ownable {
     
     uint public ethOperations;
     uint public ethShareHolders;
+    uint public ethInvestment;
     
     
 //    DistributionCampaign public dc;
@@ -129,9 +130,12 @@ contract StableCoin is ERC20, Ownable {
     }
     
     function getCollateralLevel() public view returns (uint) {
-        uint collateral = getBalanceETH().sub(ethOperations).sub(ethShareHolders);
+        uint collateral = getBalanceETH().sub(ethOperations).sub(ethShareHolders).sub(ethInvestment);
         uint coinsValue = totalSupply().mul(getPrice_CHF_ETH()).div(one8);
-        uint level = one18.mul(collateral).div(coinsValue);
+        uint level = 0;
+        if (coinsValue >0) {
+           level = one18.mul(collateral).div(coinsValue).mul(100);
+        }
         return level;
     }
     
@@ -183,7 +187,7 @@ contract StableCoin is ERC20, Ownable {
         require(msg.value >= transactionprice);
         _addShareHolder(getMsgSender(),amount);
          updateParams_(transactionpriceCoins);
-        ethOperations = ethOperations.add(transactionprice.sub(transactionpriceCoins));
+        ethInvestment = ethInvestment.add(transactionprice.sub(transactionpriceCoins));
         return true;
     }
     
