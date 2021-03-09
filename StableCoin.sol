@@ -76,7 +76,7 @@ contract StableCoin is ERC20, Ownable {
         env = env_;
         scPrice = targetPrice;
         autoScPrice = false;
-        bc = new BondCampaign(0,0);
+        bc = new BondCampaign(0,0, minPrice);
         // dc = new DistributionCampaign(0,0);
         updateParams_();
     }
@@ -102,15 +102,7 @@ contract StableCoin is ERC20, Ownable {
              scPrice =  getAutoPrice(now);
          }
          
-         if (scPrice < minPrice) {
-            if  (bc.amount() < 100*one18) {
-                bc.update(scPrice,totalSupply());
-            }
-         } else {
-             if (bc.amount()>0) {
-               bc.update(0,0);
-             }  
-         } 
+         bc.update(scPrice,totalSupply(), minPrice);
          
          /* if (scPrice > maxPrice)  {
             if  (scPrice != dc.price()) {
@@ -184,27 +176,19 @@ contract StableCoin is ERC20, Ownable {
     
     function sellCoin(uint amount) external returns (bool)   {
         updateParams_();
-        require(getBuyPrice()>0);
+        require(bc.getCoinBuyPrice(scPrice)>0);
         require(amount>0);
         require(balanceOf(getMsgSender())>=amount);
-        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(getBuyPrice()).div(one18);
+        require(bc.getAmountOfCoins()>=amount, "Amount to b big");
+        uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(bc.getCoinBuyPrice(scPrice)).div(one18);
         require(address(this).balance >= transactionprice);
         getMsgSender().transfer(transactionprice);
         _burn(getMsgSender(),amount); 
+        bc.coinBought(amount);
          updateParams_();
         return true;
     }
     
-    function getBuyPrice() public view returns (uint){
-        uint buyPrice = 0;
-        if (scPrice< minPrice) {
-            buyPrice = scPrice.mul(102).div(100);
-        }
-        if (buyPrice > minPrice) {
-            buyPrice = minPrice;
-        }
-        return buyPrice;
-    }
     
     function getShareAmount(address shareHolder) public view returns (uint) {
         return _shares[shareHolder].amount;
@@ -236,7 +220,7 @@ contract StableCoin is ERC20, Ownable {
     
      function buyBond(uint amount) public  returns (bool)  {
         updateParams_();
-        uint bondPrice =  getBondPrice();
+        uint bondPrice =  bc.getBondPrice();
         uint transactionPrice =  bondPrice.mul(amount).div(100).div(one8);
         require(bc.amount()>=amount);
         require(balanceOf(getMsgSender())>transactionPrice);
@@ -244,18 +228,10 @@ contract StableCoin is ERC20, Ownable {
         uint newPrice = ((getBondPrice(getMsgSender()).mul(getBondAmount(getMsgSender()))).add(bondPrice.mul(amount))).div(getBondAmount(getMsgSender()).add(amount));
         _bonds[getMsgSender()] = bond(newAmount,newPrice);
         _burn(getMsgSender(),transactionPrice);
-        bc.decreaseAmount(amount);
+        bc.bondSold(amount);
         updateParams_();
         return true;
     } 
-    
-     function getBondPrice() public view returns (uint) {
-        uint bondPrice = 0;
-        if (scPrice < minPrice) {
-            bondPrice = scPrice.mul(bc.priceDiscount()).div(100);
-        }
-        return bondPrice;
-    }    
     
     
     function convertBond() external payable  returns (bool)    {
