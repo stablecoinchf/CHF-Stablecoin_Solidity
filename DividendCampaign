@@ -1,0 +1,60 @@
+pragma solidity ^0.6.0;
+
+import "./SafeMath.sol";
+
+contract DividendCampaign  {
+    
+    using SafeMath for uint256;
+   
+    uint internal one8 = uint(100000000);
+    
+    uint internal one18 = uint(1000000000000000000);
+    
+
+    uint  duration = 604800;
+    
+    uint public amountETH;
+    
+    uint public startDate;
+    
+    bool public active = false;
+
+    mapping (address => bool) private _participant;
+    
+    constructor (uint _amountETH ) public {
+        _start(_amountETH);
+    }
+    
+    function isParticipant(address address_) public view returns (bool) {
+        return _participant[address_];
+    }
+    
+    function setParticipant(address address_) public {
+        _participant[address_] = true ;
+    }
+    
+    function update() public {
+         if ((now - startDate)>duration) {
+            _stop();
+         }    
+     }
+     
+    function getNumberOfCoins(uint _noOfShares, uint _totalNoOfShares, uint _priceCHFETH, uint _collateralLevel) public view returns (uint){
+        uint share = _noOfShares.mul(one18).div(_totalNoOfShares);
+        uint noCoins = share.mul(amountETH).div(one18).mul(one8).div(_priceCHFETH);
+        return noCoins;
+    }
+     
+    function _start(uint _amountETH) private {
+        amountETH = _amountETH;
+        active = true;
+        startDate = now;
+     }
+     
+     function _stop() private {
+        amountETH = 0;
+        active = false;
+        startDate = 0;
+     }
+    
+}
