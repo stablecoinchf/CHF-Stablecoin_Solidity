@@ -28,21 +28,27 @@ contract StableCoin is ERC20, Ownable {
     bool public autoScPrice;
     
     // Internal and private attributes
-    uint256 internal one8 = uint256(100000000);
-    uint256 internal one10 = uint256(10000000000);
-    uint256 internal one18 = uint256(1000000000000000000);
-    uint256 internal targetPrice = uint256(100).mul(one8);
-    uint256 public minPrice = uint256(98).mul(one8);
-    uint256 public maxPrice = uint256(102).mul(one8);
-    uint256 public icoPrice = uint256(120).mul(one8);
-    uint256 public icoCoinsPerShare = uint256(10);
-    uint256 public bonConversionFee = uint256(20);
+    uint internal one8 = uint(100000000);
+    uint internal one10 = uint(10000000000);
+    uint internal one18 = uint(1000000000000000000);
+    uint internal targetPrice = uint(100).mul(one8);
+    
+    uint public minPrice = uint(98).mul(one8);
+    uint public maxPrice = uint(102).mul(one8);
+    uint public icoPrice = uint(120).mul(one8);
+    uint public icoCoinsPerShare = uint(10);
+    uint public bonConversionFee = uint(20);
     
     
-    uint public partOperations = uint(20);
-    uint public partShareholders = uint(20);
+    uint public partOperations = uint(10);
+    uint public partDividends = uint(10);
+    uint public partShareholders = uint(10);
+    
+    
+    uint public partCollateralDR = uint(40);
     
     uint public ethOperations;
+    uint public ethDividends;
     uint public ethShareHolders;
     uint public ethInvestment;
     
@@ -89,6 +95,10 @@ contract StableCoin is ERC20, Ownable {
         updateParams_(0);
     }
     
+    function  refresh() external  {
+        updateParams_(0);
+    }
+    
     function  getBalanceETH() public view returns (uint) {
         return address(this).balance;
     }
@@ -109,6 +119,7 @@ contract StableCoin is ERC20, Ownable {
         if (_value> 0) {
              ethOperations = ethOperations.add(_value.mul(partOperations).div(100));
              ethShareHolders = ethShareHolders.add(_value.mul(partShareholders).div(100));
+             ethDividends = ethDividends.add(_value.mul(partDividends).div(100));
          }
          
         
@@ -129,12 +140,23 @@ contract StableCoin is ERC20, Ownable {
          } */
     }
     
+    function getCollateralETH() public view returns (uint) {
+        return getBalanceETH().sub(ethOperations).sub(ethShareHolders).sub(ethDividends).sub(ethInvestment);
+    }
+    
+    function getCollateralDrTEH() public view returns (uint) {
+        return getCollateralETH().mul(partCollateralDR).div(100);
+    }
+    
+    function getCollateralLiqETH() public view returns (uint) {
+        return getCollateralETH() - getCollateralDrTEH();
+    }
+    
     function getCollateralLevel() public view returns (uint) {
-        uint collateral = getBalanceETH().sub(ethOperations).sub(ethShareHolders).sub(ethInvestment);
         uint coinsValue = totalSupply().mul(getPrice_CHF_ETH()).div(one8);
         uint level = 0;
         if (coinsValue >0) {
-           level = one18.mul(collateral).div(coinsValue).mul(100);
+           level = one18.mul(getCollateralETH()).div(coinsValue).mul(100);
         }
         return level;
     }
