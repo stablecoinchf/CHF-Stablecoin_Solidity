@@ -15,46 +15,98 @@ contract DividendCampaign  {
     
     uint public amountETH;
     
-    uint public startDate;
+    uint public startTime;
     
     bool public active = false;
 
-    mapping (address => bool) private _participant;
+    mapping (address => dividend) private _dividends;
+    
+    struct dividend {
+        uint amount; //Amount of coins
+        uint price; //Price in ETH
+    }
     
     constructor (uint _amountETH ) public {
         _start(_amountETH);
     }
     
-    function isParticipant(address address_) public view returns (bool) {
-        return _participant[address_];
+    function getDividendAmount(address address_) public view returns (uint) {
+        return _dividends[address_].amount;
     }
     
-    function setParticipant(address address_) public {
-        _participant[address_] = true ;
+    function getDividendPrice(address address_) public view returns (uint) {
+        return _dividends[address_].price;
     }
+    
+    function dividendPayed(address address_) public view returns (bool) {
+        return (_dividends[address_].amount > 0);
+    }
+    
+    function getRestTime() public view returns (uint) {
+        uint resttime = now - startTime;
+        if (resttime >= duration) {
+            resttime = 0;
+        } else {
+            resttime = duration - resttime;
+        }
+        return resttime;
+    }
+    
     
     function update() public {
-         if ((now - startDate)>duration) {
+         if ((now - startTime)>duration) {
             _stop();
          }    
      }
      
-    function getNumberOfCoins(uint _noOfShares, uint _totalNoOfShares, uint _priceCHFETH, uint _collateralLevel) public view returns (uint){
+    /* function getAvailableAmount(uint _noOfShares, uint _totalNoOfShares, uint _priceCHFETH, uint _collateralLevel) public view returns (uint) {
         uint share = _noOfShares.mul(one18).div(_totalNoOfShares);
-        uint noCoins = share.mul(amountETH).div(one18).mul(one8).div(_priceCHFETH);
+        uint price = share.mul(amountETH).div(one18);
+        uint noCoins = price.mul(one8).div(_priceCHFETH);
+        
+        if (_collateralLevel< one18.mul(100)) {
+            noCoins = noCoins.mul(50).div(100);
+        }
+        if (_collateralLevel< one18.mul(50)) {
+            noCoins = noCoins.mul(50).div(100);
+        }
         return noCoins;
+    } */
+     
+     
+    function createDividend(address account, uint _noOfShares, uint _totalNoOfShares, uint _priceCHFETH, uint _collateralLevel) public  returns (bool) {
+        
+        uint share = _noOfShares.mul(one18).div(_totalNoOfShares);
+        uint price = share.mul(amountETH).div(one18);
+        uint noCoins = price.mul(one8).div(_priceCHFETH);
+        
+        if (_collateralLevel< one18.mul(100)) {
+            noCoins = noCoins.mul(50).div(100);
+        }
+        if (_collateralLevel< one18.mul(50)) {
+            noCoins = noCoins.mul(50).div(100);
+        }
+        
+        _dividends[account] = dividend(noCoins,price);
+        
+        return true;
     }
      
     function _start(uint _amountETH) private {
-        amountETH = _amountETH;
-        active = true;
-        startDate = now;
+        if (_amountETH>0) {
+            amountETH = _amountETH;
+            active = true;
+            startTime = now;    
+        } else {
+            _stop();
+        }
+        
      }
      
      function _stop() private {
         amountETH = 0;
         active = false;
-        startDate = 0;
+        startTime = 0;
      }
     
 }
