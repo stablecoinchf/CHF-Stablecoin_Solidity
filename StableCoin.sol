@@ -1,6 +1,6 @@
 pragma solidity ^0.6.2;
 
-// import "./DistributionCampaign.sol";
+import "./DividendCampaign.sol";
 import "./BondCampaign.sol";
 import "./Prices.sol";
 
@@ -35,27 +35,23 @@ contract StableCoin is ERC20, Ownable {
     
     uint public minPrice = uint(98).mul(one8);
     uint public maxPrice = uint(102).mul(one8);
-    uint public icoPrice = uint(120).mul(one8);
-    uint public icoCoinsPerShare = uint(10);
+   
     uint public bonConversionFee = uint(20);
+   
+    uint public icoPrice = uint(120).mul(one8);
+    uint public icoCoinsPerShare = uint(10); 
     
-    
-    uint public partOperations = uint(10);
-    uint public partDividends = uint(10);
-    uint public partShareholders = uint(10);
-    
-    
-    uint public partCollateralDR = uint(40);
+    uint public partOperations = uint(15);
+    uint public partDividends = uint(15);
     
     uint public ethOperations;
     uint public ethDividends;
-    uint public ethShareHolders;
     uint public ethInvestment;
     
     
-//    DistributionCampaign public dc;
-    
     BondCampaign public bc;
+    
+    DividendCampaign public dc;
     
     struct bond {
         uint amount; //Amount of tokens the bond contract is for
@@ -91,7 +87,7 @@ contract StableCoin is ERC20, Ownable {
         scPrice = targetPrice;
         autoScPrice = false;
         bc = new BondCampaign(0,0, minPrice);
-        // dc = new DistributionCampaign(0,0);
+        dc = new DividendCampaign(0);
         updateParams_(0);
     }
     
@@ -118,7 +114,6 @@ contract StableCoin is ERC20, Ownable {
         
         if (_value> 0) {
              ethOperations = ethOperations.add(_value.mul(partOperations).div(100));
-             ethShareHolders = ethShareHolders.add(_value.mul(partShareholders).div(100));
              ethDividends = ethDividends.add(_value.mul(partDividends).div(100));
          }
          
@@ -129,28 +124,19 @@ contract StableCoin is ERC20, Ownable {
          
          bc.update(scPrice,totalSupply(), minPrice);
          
-         /* if (scPrice > maxPrice)  {
-            if  (scPrice != dc.price()) {
-               dc = new DistributionCampaign(scPrice,totalSupply());
-            }
-         } else {
-              if (dc.amount()>0) {
-                dc = new DistributionCampaign(0,0);
-              }  
-         } */
+         if (dc.active()) {
+             dc.update();
+         }
+         if (!dc.active() && ethDividends>0) {
+             dc = new DividendCampaign(ethDividends);
+         }
+         
     }
     
     function getCollateralETH() public view returns (uint) {
-        return getBalanceETH().sub(ethOperations).sub(ethShareHolders).sub(ethDividends).sub(ethInvestment);
+        return getBalanceETH().sub(ethOperations).sub(ethDividends).sub(ethInvestment);
     }
     
-    function getCollateralDrTEH() public view returns (uint) {
-        return getCollateralETH().mul(partCollateralDR).div(100);
-    }
-    
-    function getCollateralLiqETH() public view returns (uint) {
-        return getCollateralETH() - getCollateralDrTEH();
-    }
     
     function getCollateralLevel() public view returns (uint) {
         uint coinsValue = totalSupply().mul(getPrice_CHF_ETH()).div(one8);
@@ -204,12 +190,13 @@ contract StableCoin is ERC20, Ownable {
         updateParams_(0);
         require(amount>0);
         uint transactionpriceCoins = amount.mul(getPrice_CHF_ETH()).mul(icoCoinsPerShare).div(one8);
-        // uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(icoPrice).mul(icoCoinsPerShare).div(one18);
         uint transactionprice = transactionpriceCoins.mul(icoPrice).div(one8).div(100);
         require(msg.value >= transactionprice);
         _addShareHolder(getMsgSender(),amount);
-         updateParams_(transactionpriceCoins);
+         
+        updateParams_(transactionpriceCoins);
         ethInvestment = ethInvestment.add(transactionprice.sub(transactionpriceCoins));
+        
         return true;
     }
     
@@ -252,16 +239,35 @@ contract StableCoin is ERC20, Ownable {
         return _shares[shareHolder].amount > 0;
     }
     
-/*    function distributeCoins() public  returns (bool)  {
-        updateParams_();
-        require(dc.amount()>0);
+    function isDividendAvailable() external view  returns (bool)  {
+        bool available = false;
+        if (isShareHolder(getMsgSender()) && dc.active() && !dc.dividendPayed(getMsgSender())){
+            available = true;
+        }
+        return available;
+    }
+    
+    
+    function getDividend() external payable  returns (bool)  {
+        
+        updateParams_(0);
+        
+        require(dc.active());
         require(isShareHolder(getMsgSender()));
-        require(!dc.isParticipant(getMsgSender()));
-        _mint(getMsgSender(),dc.amount().mul(getShareAmount(getMsgSender())).div(totalNoOfShares));
-        dc.setParticipant(getMsgSender());
-        updateParams_();
+        require(!dc.dividendPayed(getMsgSender()));
+        
+        dc.createDividend(getMsgSender(),balanceOf(getMsgSender()),totalSupply(),getPrice_CHF_ETH(),getCollateralLevel());
+        
+        require(dc.getDividendAmount(getMsgSender())>0);
+        
+        _mint(getMsgSender(),dc.getDividendAmount(getMsgSender()));
+        
+        ethDividends.sub(dc.getDividendPrice(getMsgSender()));
+        
+        updateParams_(0);
+        
         return true;
-    } */
+    } 
     
     function isBondHolder(address bondHolder) public view returns (bool) {
         return _bonds[bondHolder].amount > 0;
