@@ -59,33 +59,27 @@ contract DividendCampaign  {
          }    
      }
      
-    /* function getAvailableAmount(uint _noOfShares, uint _totalNoOfShares, uint _priceCHFETH, uint _collateralLevel) public view returns (uint) {
-        uint share = _noOfShares.mul(one18).div(_totalNoOfShares);
-        uint price = share.mul(amountETH).div(one18);
-        uint noCoins = price.mul(one8).div(_priceCHFETH);
+    
+     function getDividendProShare(uint _totalNoOfShares, uint _priceCHFETH, uint _collateralLevel) public view returns (uint) {
+        uint dividend = amountETH.mul(one18).div(_totalNoOfShares);
+        dividend = dividend.mul(one8).div(_priceCHFETH);
         
         if (_collateralLevel< one18.mul(100)) {
-            noCoins = noCoins.mul(50).div(100);
+            dividend = dividend.mul(50).div(100);
         }
         if (_collateralLevel< one18.mul(50)) {
-            noCoins = noCoins.mul(50).div(100);
-        }
-        return noCoins;
-    } */
-     
+            dividend = dividend.mul(50).div(100);
+        } 
+        
+        return dividend;
+    }
      
     function createDividend(address account, uint _noOfShares, uint _totalNoOfShares, uint _priceCHFETH, uint _collateralLevel) public  returns (bool) {
         
+        uint noCoins = _noOfShares.mul(getDividendProShare(_totalNoOfShares,_priceCHFETH,_collateralLevel)).div(one18);
+        
         uint share = _noOfShares.mul(one18).div(_totalNoOfShares);
         uint price = share.mul(amountETH).div(one18);
-        uint noCoins = price.mul(one8).div(_priceCHFETH);
-        
-        if (_collateralLevel< one18.mul(100)) {
-            noCoins = noCoins.mul(50).div(100);
-        }
-        if (_collateralLevel< one18.mul(50)) {
-            noCoins = noCoins.mul(50).div(100);
-        }
         
         _dividends[account] = dividend(noCoins,price);
         
