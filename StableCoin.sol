@@ -36,7 +36,7 @@ contract StableCoin is ERC20, Ownable {
     uint public minPrice = uint(98).mul(one8);
     uint public maxPrice = uint(102).mul(one8);
    
-    uint public bonConversionFee = uint(20);
+    uint public conversionFee = uint(20);
    
     uint public icoPrice = uint(120).mul(one8);
     uint public icoCoinsPerShare = uint(10); 
@@ -79,7 +79,7 @@ contract StableCoin is ERC20, Ownable {
     
     event BurnerAdded(address indexed account);
    
-    event BurnerRemoved(address indexed account);
+    event BurnerRemoved(address indexed account); 
     
     
     constructor (string memory name_, string memory symbol_, uint env_) public  ERC20(name_, symbol_) {
@@ -191,11 +191,13 @@ contract StableCoin is ERC20, Ownable {
         require(amount>0);
         uint transactionpriceCoins = amount.mul(getPrice_CHF_ETH()).mul(icoCoinsPerShare).div(one8);
         uint transactionprice = transactionpriceCoins.mul(icoPrice).div(one8).div(100);
-        require(msg.value >= transactionprice);
+        
         _addShareHolder(getMsgSender(),amount);
          
         updateParams_(transactionpriceCoins);
         ethInvestment = ethInvestment.add(transactionprice.sub(transactionpriceCoins));
+        
+        require(msg.value >= transactionprice);
         
         return true;
     }
@@ -204,9 +206,9 @@ contract StableCoin is ERC20, Ownable {
         updateParams_(0);
         require(amount>0, "Amount not > 0");
         uint transactionprice = amount.mul(getPrice_CHF_ETH()).mul(maxPrice).div(one18);
-        require(msg.value >= transactionprice, "Incorrect transactionsprice");
         _mint(getMsgSender(),amount);
         updateParams_(msg.value);
+        require(msg.value >= transactionprice, "Incorrect transactionsprice");
         return true;
     }
     
@@ -247,6 +249,15 @@ contract StableCoin is ERC20, Ownable {
         return available;
     }
     
+    function getDividendProShare() public view returns (uint) {
+        return dc.getDividendProShare(totalSupply(),getPrice_CHF_ETH(),getCollateralLevel());
+    }
+    
+     function getDividendFee(address bondHolder) public view returns (uint) {
+        uint gain = getDividendProShare();
+        return getShareAmount(bondHolder).mul(getDividendProShare()).div(one18).mul(getPrice_CHF_ETH()).div(one8).mul(conversionFee).div(100);
+    }
+    
     
     function getDividend() external payable  returns (bool)  {
         
@@ -260,14 +271,19 @@ contract StableCoin is ERC20, Ownable {
         
         require(dc.getDividendAmount(getMsgSender())>0);
         
+        uint fee =  getDividendFee(getMsgSender());
+        
         _mint(getMsgSender(),dc.getDividendAmount(getMsgSender()));
         
-        ethDividends.sub(dc.getDividendPrice(getMsgSender()));
+        ethDividends = ethDividends.sub(dc.getDividendPrice(getMsgSender()));
         
         updateParams_(0);
         
+        require(msg.value >= fee);
+        
         return true;
     } 
+    
     
     function isBondHolder(address bondHolder) public view returns (bool) {
         return _bonds[bondHolder].amount > 0;
@@ -292,7 +308,6 @@ contract StableCoin is ERC20, Ownable {
     function convertBond() external payable  returns (bool)    {
         updateParams_(0);
         uint fee =  getBondConversionFee(getMsgSender());
-        require(msg.value >= fee);
         require(scPrice>targetPrice);
         require(getBondAmount(getMsgSender())>0);
         uint newCoins = getBondAmount(getMsgSender())%10;
@@ -300,6 +315,7 @@ contract StableCoin is ERC20, Ownable {
         _addShareHolder(getMsgSender(),getBondAmount(getMsgSender()).sub(newCoins).div(10));
         delete(_bonds[getMsgSender()]);
         updateParams_(msg.value);
+        require(msg.value >= fee);
         return true;
     }
     
@@ -313,7 +329,7 @@ contract StableCoin is ERC20, Ownable {
     
     function getBondConversionFee(address bondHolder) public view returns (uint) {
         uint gain = targetPrice.sub(getBondPrice(bondHolder));
-        return getBondAmount(bondHolder).mul(getPrice_CHF_ETH()).mul(gain).mul(bonConversionFee).div(100).div(one18);
+        return getBondAmount(bondHolder).mul(getPrice_CHF_ETH()).mul(gain).mul(conversionFee).div(100).div(one18);
     }
     
     
@@ -334,7 +350,7 @@ contract StableCoin is ERC20, Ownable {
     }
 
    
-    function addMinter(address account) external onlyOwner  {
+     function addMinter(address account) external onlyOwner  {
         _addMinter(account);
     }
     
@@ -349,7 +365,7 @@ contract StableCoin is ERC20, Ownable {
     
      function removeBurner(address account) external onlyOwner {
         _removeBurner(account);
-    }
+    } 
     
     modifier onlyMinter() {
         require(
@@ -373,14 +389,14 @@ contract StableCoin is ERC20, Ownable {
     
      function isBurner(address account) public view returns (bool) {
         return _burners.has(account);
-    }
+    } 
     
     function getMsgSender() public view returns (address payable) {
         return _msgSender();
     }
     
     
-    // Internal functions
+     
     function _addMinter(address account) internal  {
         _minters.add(account);
         emit MinterAdded(account);
@@ -399,7 +415,7 @@ contract StableCoin is ERC20, Ownable {
     function _removeBurner(address account) internal {
         _burners.remove(account);
         emit BurnerRemoved(account);
-    }
+    } 
 
     
 }
