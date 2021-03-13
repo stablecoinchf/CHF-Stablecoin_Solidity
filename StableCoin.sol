@@ -4,7 +4,6 @@ import "./DividendCampaign.sol";
 import "./BondCampaign.sol";
 import "./Prices.sol";
 
-import "./Roles.sol";
 import "./Ownable.sol";
 
 import "./ERC20.sol";
@@ -13,8 +12,7 @@ import "./SafeMath.sol";
 contract StableCoin is ERC20, Ownable {
     
     using SafeMath for uint256;
-    using Roles for Roles.Role;
-    
+
     /* Environmnet
     * 0 - Remix
     * 1 - Kovan
@@ -69,19 +67,7 @@ contract StableCoin is ERC20, Ownable {
     
     uint public totalNoOfShares = 0;
     
-    Roles.Role private _minters;
-    
-    Roles.Role private _burners;
-    
-    event MinterAdded(address indexed account);
-    
-    event MinterRemoved(address indexed account);
-    
-    event BurnerAdded(address indexed account);
-   
-    event BurnerRemoved(address indexed account); 
-    
-    
+
     constructor (string memory name_, string memory symbol_, uint env_) public  ERC20(name_, symbol_) {
         env = env_;
         scPrice = targetPrice;
@@ -173,18 +159,6 @@ contract StableCoin is ERC20, Ownable {
         totalNoOfShares = totalNoOfShares.add(amount);
         updateParams_(0);
     }
-    
-    /* function reduceShares(address account, uint amount) external onlyOwner returns (bool)   {
-        require(amount>0);
-        uint newAmount = 0;
-        if (getShareAmount(account) > amount)  {
-            newAmount = getShareAmount(account).sub(amount);
-        }
-        uint newPrice = getSharePrice(account);
-        _shares[account] = share(newAmount,newPrice);
-        totalNoOfShares = totalNoOfShares.sub(amount);
-        return true;
-    } */
     
     function buyShare(uint amount) external payable  returns (bool)   {
         updateParams_(0);
@@ -332,10 +306,14 @@ contract StableCoin is ERC20, Ownable {
         return getBondAmount(bondHolder).mul(getPrice_CHF_ETH()).mul(gain).mul(conversionFee).div(100).div(one18);
     }
     
+    function getMsgSender() public view returns (address payable) {
+        return _msgSender();
+    }
+    
     
     function mint(address to, uint256 amount)
         external
-        onlyMinter
+        onlyOwner
         returns (bool)
     {
         _mint(to, amount);
@@ -343,79 +321,11 @@ contract StableCoin is ERC20, Ownable {
         return true;
     }
     
-    function burn(uint256 amount) external onlyBurner returns (bool) {
+    function burn(uint256 amount) external onlyOwner returns (bool) {
         _burn(_msgSender(), amount);
         updateParams_(0);
         return true;
     }
-
-   
-     function addMinter(address account) external onlyOwner  {
-        _addMinter(account);
-    }
-    
-     function addBurner(address account) external onlyOwner  {
-        _addBurner(account);
-    }
-    
- 
-    function removeMinter(address account) external onlyOwner {
-        _removeMinter(account);
-    }
-    
-     function removeBurner(address account) external onlyOwner {
-        _removeBurner(account);
-    } 
-    
-    modifier onlyMinter() {
-        require(
-            isMinter(_msgSender()),
-            "MinterRole: caller does not have the Minter role"
-        );
-        _;
-    }
-    
-    modifier onlyBurner() {
-        require(
-            isBurner(_msgSender()),
-            "BurnerRole: caller does not have the Burner role"
-        );
-        _;
-    }
-   
-    function isMinter(address account) public view returns (bool) {
-        return _minters.has(account);
-    }
-    
-     function isBurner(address account) public view returns (bool) {
-        return _burners.has(account);
-    } 
-    
-    function getMsgSender() public view returns (address payable) {
-        return _msgSender();
-    }
-    
-    
-     
-    function _addMinter(address account) internal  {
-        _minters.add(account);
-        emit MinterAdded(account);
-    }
-    
-    function _addBurner(address account) internal  {
-        _burners.add(account);
-        emit BurnerAdded(account);
-    }
-    
-    function _removeMinter(address account) internal {
-        _minters.remove(account);
-        emit MinterRemoved(account);
-    }
-    
-    function _removeBurner(address account) internal {
-        _burners.remove(account);
-        emit BurnerRemoved(account);
-    } 
 
     
 }

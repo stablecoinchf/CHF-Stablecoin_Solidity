@@ -61,7 +61,11 @@ contract DividendCampaign  {
      
     
      function getDividendProShare(uint _totalNoOfShares, uint _priceCHFETH, uint _collateralLevel) public view returns (uint) {
-        uint dividend = amountETH.mul(one18).div(_totalNoOfShares);
+        uint dividend = 0;
+        if (_totalNoOfShares>0) {
+            dividend = amountETH.mul(one18).div(_totalNoOfShares);
+        }
+    
         dividend = dividend.mul(one8).div(_priceCHFETH);
         
         if (_collateralLevel< one18.mul(100)) {
