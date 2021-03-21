@@ -224,7 +224,7 @@ contract StableCoin is ERC20, Ownable {
     }
     
     function getDividendProShare() public view returns (uint) {
-        return dc.getDividendProShare(totalSupply(),getPrice_CHF_ETH(),getCollateralLevel());
+        return dc.getDividendProShare(totalNoOfShares,getPrice_CHF_ETH(),getCollateralLevel());
     }
     
      function getDividendFee(address bondHolder) public view returns (uint) {
