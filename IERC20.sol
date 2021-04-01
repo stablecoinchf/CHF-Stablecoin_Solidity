@@ -23,7 +23,7 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transfer(address recipient, uint256 amount) external returns (bool);
+    function transfer(address recipient, uint256 amount) external payable returns (bool);
 
     /**
      * @dev Returns the remaining number of tokens that `spender` will be
@@ -59,7 +59,7 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 amount) external payable returns (bool);
 
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
