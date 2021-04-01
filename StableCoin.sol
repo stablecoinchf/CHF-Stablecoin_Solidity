@@ -39,8 +39,10 @@ contract StableCoin is ERC20, Ownable {
     uint public icoPrice = uint(120).mul(one8);
     uint public icoCoinsPerShare = uint(10); 
     
-    uint public partOperations = uint(15);
-    uint public partDividends = uint(15);
+    uint public partOperations = uint(5);
+    uint public partDividends = uint(5);
+    
+    uint public feeTransfer = one18.div(2); // 0.5 %
     
     uint public ethOperations;
     uint public ethDividends;
@@ -77,6 +79,36 @@ contract StableCoin is ERC20, Ownable {
         updateParams_(0);
     }
     
+    function destroy() public onlyOwner {
+        address payable onwerPayable = payable(owner());
+        selfdestruct(onwerPayable);
+    } 
+    
+    
+    function transferEther(address payable _account, uint _amountETH) external  onlyOwner {
+        require(getBalanceETH()>=_amountETH);
+        _account.transfer(_amountETH);
+    }
+
+    
+
+    function transfer(address _recipient, uint256 _amount) public virtual override payable returns (bool) {
+        require(msg.value >= getTransferFee(_amount), "Insufiicient Ether provided, check getTransferFee(_amount) function");
+        return super.transfer(_recipient,_amount);
+    }
+    
+    
+    function transferFrom(address _sender, address _recipient, uint256 _amount) public virtual override payable returns (bool) {
+        require(msg.value >= getTransferFee(_amount), "Insufiicient Ether provided, check getTransferFee(_amount) function");
+        return super.transferFrom(_sender,_recipient,_amount);
+    }
+    
+    function getTransferFee(uint _amount) public view returns (uint) {
+        uint fee = (((_amount.mul(getPrice_CHF_ETH())).div(one8)).mul(feeTransfer)).div(one18).div(100);
+        return fee;
+    }
+    
+    
     function  refresh() external  {
         updateParams_(0);
     }
@@ -95,6 +127,21 @@ contract StableCoin is ERC20, Ownable {
         scPrice =  _scPrice;
         updateParams_(0);
     }
+    
+    /* function  setPartOperations(uint  _partOperations) external onlyOwner {
+        partOperations =  _partOperations;
+        updateParams_(0);
+    }
+    
+    function  setPartDividends(uint  _partDividends) external onlyOwner {
+        partDividends =  _partDividends;
+        updateParams_(0);
+    } */
+    
+    function  setFeeTransfer(uint  _feeTransfer) external onlyOwner {
+        feeTransfer =  _feeTransfer;
+        updateParams_(0);
+    } 
     
     function updateParams_(uint _value) internal {
         
