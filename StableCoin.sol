@@ -70,7 +70,7 @@ contract StableCoin is ERC20, Ownable {
     uint public totalNoOfShares = 0;
     
 
-    constructor (string memory name_, string memory symbol_, uint env_) public  ERC20(name_, symbol_) {
+    constructor (uint env_) public  ERC20("Swiss Franc Stablecoin", "bitCHF") {
         env = env_;
         scPrice = targetPrice;
         autoScPrice = false;
@@ -106,7 +106,7 @@ contract StableCoin is ERC20, Ownable {
     function getTransferFee(uint _amount) public view returns (uint) {
         uint fee = (((_amount.mul(getPrice_CHF_ETH())).div(one8)).mul(feeTransfer)).div(one18).div(100);
         return fee;
-    }
+    } 
     
     
     function  refresh() external  {
