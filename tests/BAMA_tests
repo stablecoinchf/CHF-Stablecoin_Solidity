@@ -1,0 +1,29 @@
+pragma solidity ^0.8.0;
+import "remix_tests.sol"; // this import is automatically injected by Remix.
+import "remix_accounts.sol";
+import "../contracts/BAMA.sol";
+
+
+// File name has to end with '_test.sol', this file can contain more than one testSuite contracts
+contract testSuite {
+    
+    // Bama coin;
+    BAMAToken bamaCoin;
+        
+    function beforeAll() public {        
+        bamaCoin = new BAMAToken(100000000000000000000);        
+    }
+
+    function testName() public {
+        Assert.equal(bamaCoin.name(),  "SNB BAMA Token", "incorrect Message") ;
+    }
+    
+    function testID() public {
+        Assert.equal(bamaCoin.symbol(),  "BAMA", "incorrect Message") ;
+    }
+    
+    function testTotalSuppply() public {
+        Assert.equal(bamaCoin.totalSupply(),  uint256(100000000000000000000), "incorrect totalSupply") ;
+    }
+            
+}
