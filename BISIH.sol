@@ -1,9 +1,29 @@
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GPL-3.0
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+pragma solidity >=0.8.2 <0.9.0;
 
-contract BAMAToken is ERC20 {
-    constructor(uint256 initialSupply) public ERC20("BIS Innovation Hub Token", "BISIH") {
-        _mint(msg.sender, initialSupply);
+/**
+ * @title Storage
+ * @dev Store & retrieve value in a variable
+ * @custom:dev-run-script ./scripts/deploy_with_ethers.ts
+ */
+contract Storage {
+
+    uint256 number;
+
+    /**
+     * @dev Store value in variable
+     * @param num value to store
+     */
+    function store(uint256 num) public {
+        number = num;
+    }
+
+    /**
+     * @dev Return value 
+     * @return value of 'number'
+     */
+    function retrieve() public view returns (uint256){
+        return number;
     }
 }
